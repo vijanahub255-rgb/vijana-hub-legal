@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Review Dashboard</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f8fafc;
+      color: #1e293b;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 250px 1fr;
+      min-height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      background: #1e293b;
+      color: white;
+      padding: 1.5rem;
+    }
+
+    .sidebar h2 {
+      font-size: 1.25rem;
+      margin-bottom: 2rem;
+      color: #60a5fa;
+    }
+
+    .nav-item {
+      padding: 0.75rem 1rem;
+      margin-bottom: 0.5rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .nav-item:hover {
+      background: #334155;
+    }
+
+    .nav-item.active {
+      background: #3b82f6;
+    }
+
+    /* Main Content */
+    .main-content {
+      padding: 2rem;
+      overflow-y: auto;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    .header h1 {
+      font-size: 1.875rem;
+      font-weight: 700;
+    }
+
+    /* Stats Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .stat-label {
+      font-size: 0.875rem;
+      color: #64748b;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .stat-badge {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-top: 0.5rem;
+    }
+
+    .badge-urgent { background: #fecaca; color: #7f1d1d; }
+    .badge-high { background: #fed7aa; color: #7c2d12; }
+    .badge-normal { background: #bfdbfe; color: #1e3a8a; }
+    .badge-low { background: #d1d5db; color: #374151; }
+
+    /* Filters */
+    .filters {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .filter-group label {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #475569;
+    }
+
+    select, input {
+      padding: 0.5rem 0.75rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      font-size: 0.875rem;
+    }
+
+    /* Review Table */
+    .review-table {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead {
+      background: #f8fafc;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    th {
+      text-align: left;
+      padding: 1rem;
+      font-weight: 600;
+      font-size: 0.875rem;
+      color: #475569;
+    }
+
+    td {
+      padding: 1rem;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    tr:hover {
+      background: #f8fafc;
+    }
+
+    .priority-indicator {
+      width: 4px;
+      height: 100%;
+      position: absolute;
+      left: 0;
+      top: 0;
+    }
+
+    .priority-urgent { background: #ef4444; }
+    .priority-high { background: #f59e0b; }
+    .priority-normal { background: #3b82f6; }
+    .priority-low { background: #9ca3af; }
+
+    .btn {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: #3b82f6;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #2563eb;
+    }
+
+    .btn-success {
+      background: #10b981;
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #059669;
+    }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      overflow-y: auto;
+    }
+
+    .modal-content {
+      background: white;
+      max-width: 900px;
+      margin: 2rem auto;
+      border-radius: 12px;
+      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+    }
+
+    .modal-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-body {
+      padding: 1.5rem;
+      max-height: 60vh;
+      overflow-y: auto;
+    }
+
+    .modal-footer {
+      padding: 1.5rem;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: flex-end;
+      gap: 1rem;
+    }
+
+    .user-info {
+      background: #f8fafc;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+    }
+
+    .conversation-history {
+      max-height: 300px;
+      overflow-y: auto;
+      padding: 1rem;
+      background: #f8fafc;
+      border-radius: 8px;
+      margin: 1rem 0;
+    }
+
+    .message {
+      padding: 0.75rem;
+      margin: 0.5rem 0;
+      border-radius: 8px;
+      max-width: 80%;
+    }
+
+    .message-user {
+      background: #e0e7ff;
+      margin-left: auto;
+    }
+
+    .message-assistant {
+      background: #dbeafe;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .canned-responses {
+      margin: 1rem 0;
+    }
+
+    .canned-response-item {
+      padding: 0.75rem;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .canned-response-item:hover {
+      background: #e0e7ff;
+      border-color: #3b82f6;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 2rem;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <h2>📋 Review System</h2>
+      <nav>
+        <div class="nav-item active" onclick="showView('queue')">
+          🔔 Review Queue
+        </div>
+        <div class="nav-item" onclick="showView('analytics')">
+          📊 Analytics
+        </div>
+        <div class="nav-item" onclick="showView('canned')">
+          💬 Canned Responses
+        </div>
+        <div class="nav-item" onclick="showView('settings')">
+          ⚙️ Settings
+        </div>
+      </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Queue View -->
+      <div id="queue-view">
+        <div class="header">
+          <h1>Review Queue</h1>
+          <button class="btn btn-primary" onclick="loadQueue()">🔄 Refresh</button>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Pending Reviews</div>
+            <div class="stat-value" id="stat-pending">-</div>
+            <span class="stat-badge badge-urgent" id="stat-urgent">0 Urgent</span>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">In Review</div>
+            <div class="stat-value" id="stat-in-review">-</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Avg Response Time</div>
+            <div class="stat-value" id="stat-avg-time">-</div>
+            <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.5rem;">hours</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Completed Today</div>
+            <div class="stat-value" id="stat-completed">-</div>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filters">
+          <div class="filter-group">
+            <label>Status</label>
+            <select id="filter-status" onchange="loadQueue()">
+              <option value="">All</option>
+              <option value="pending" selected>Pending</option>
+              <option value="in_review">In Review</option>
+              <option value="responded">Responded</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>Priority</label>
+            <select id="filter-priority" onchange="loadQueue()">
+              <option value="">All</option>
+              <option value="urgent">Urgent</option>
+              <option value="high">High</option>
+              <option value="normal">Normal</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>Category</label>
+            <select id="filter-category" onchange="loadQueue()">
+              <option value="">All</option>
+              <option value="payment">Payment</option>
+              <option value="scholarship">Scholarship</option>
+              <option value="technical">Technical</option>
+              <option value="complaint">Complaint</option>
+              <option value="general">General</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>Search</label>
+            <input type="text" id="filter-search" placeholder="Search user or message..." onkeyup="filterTable()">
+          </div>
+        </div>
+
+        <!-- Review Table -->
+        <div class="review-table">
+          <table id="review-queue-table">
+            <thead>
+              <tr>
+                <th>Priority</th>
+                <th>User</th>
+                <th>Message</th>
+                <th>Category</th>
+                <th>Waiting</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="queue-tbody">
+              <tr>
+                <td colspan="7">
+                  <div class="loading">Loading review queue...</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Analytics View -->
+      <div id="analytics-view" style="display: none;">
+        <div class="header">
+          <h1>Analytics & Reports</h1>
+          <button class="btn btn-primary" onclick="loadAnalytics()">🔄 Refresh</button>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Total Reviews (7 days)</div>
+            <div class="stat-value" id="analytics-total">-</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Avg Response Time</div>
+            <div class="stat-value" id="analytics-avg-time">-</div>
+            <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.5rem;">hours</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Completion Rate</div>
+            <div class="stat-value" id="analytics-completion">-</div>
+            <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.5rem;">percent</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Most Common Category</div>
+            <div class="stat-value" style="font-size: 1.25rem;" id="analytics-top-category">-</div>
+          </div>
+        </div>
+
+        <div style="background: white; padding: 1.5rem; border-radius: 12px; margin-top: 1.5rem;">
+          <h2 style="margin-bottom: 1rem;">Reviews by Category</h2>
+          <div id="category-chart"></div>
+        </div>
+
+        <div style="background: white; padding: 1.5rem; border-radius: 12px; margin-top: 1.5rem;">
+          <h2 style="margin-bottom: 1rem;">Admin Performance</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Admin</th>
+                <th>Total Reviews</th>
+                <th>Completed</th>
+                <th>Avg Response Time</th>
+                <th>Last Review</th>
+              </tr>
+            </thead>
+            <tbody id="admin-performance-tbody">
+              <tr><td colspan="5"><div class="loading">Loading...</div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Canned Responses View -->
+      <div id="canned-view" style="display: none;">
+        <div class="header">
+          <h1>Canned Responses</h1>
+          <button class="btn btn-primary" onclick="showAddCannedModal()">+ Add New</button>
+        </div>
+
+        <div id="canned-responses-list">
+          <div class="loading">Loading canned responses...</div>
+        </div>
+      </div>
+
+      <!-- Settings View -->
+      <div id="settings-view" style="display: none;">
+        <div class="header">
+          <h1>Settings</h1>
+        </div>
+
+        <div style="background: white; padding: 1.5rem; border-radius: 12px;">
+          <h3 style="margin-bottom: 1rem;">Admin Profile</h3>
+          <div class="filter-group" style="margin-bottom: 1rem;">
+            <label>Username</label>
+            <input type="text" id="admin-username" value="admin" readonly>
+          </div>
+          <div class="filter-group" style="margin-bottom: 1rem;">
+            <label>Full Name</label>
+            <input type="text" id="admin-fullname" placeholder="Your Name">
+          </div>
+          <div class="filter-group" style="margin-bottom: 1rem;">
+            <label>Email</label>
+            <input type="email" id="admin-email" placeholder="admin@example.com">
+          </div>
+          <button class="btn btn-success">Save Changes</button>
+        </div>
+
+        <div style="background: white; padding: 1.5rem; border-radius: 12px; margin-top: 1.5rem;">
+          <h3 style="margin-bottom: 1rem;">Notification Settings</h3>
+          <label style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+            <input type="checkbox" checked>
+            Email notifications for urgent reviews
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+            <input type="checkbox" checked>
+            Browser notifications
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.5rem;">
+            <input type="checkbox">
+            Daily summary reports
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Review Detail Modal -->
+  <div id="review-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Review Details</h2>
+        <button class="btn btn-primary" onclick="closeReviewModal()">✕ Close</button>
+      </div>
+      <div class="modal-body">
+        <div class="user-info" id="modal-user-info">
+          <div class="loading">Loading...</div>
+        </div>
+
+        <h3 style="margin-bottom: 0.75rem;">User Message</h3>
+        <div style="background: #f8fafc; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+          <p id="modal-user-message">-</p>
+        </div>
+
+        <h3 style="margin-bottom: 0.75rem;">AI Suggested Response</h3>
+        <div style="background: #dbeafe; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+          <p id="modal-ai-response">-</p>
+        </div>
+
+        <h3 style="margin-bottom: 0.75rem;">Conversation History</h3>
+        <div class="conversation-history" id="modal-conversation">
+          <div class="loading">Loading conversation...</div>
+        </div>
+
+        <h3 style="margin-bottom: 0.75rem;">Canned Responses</h3>
+        <div class="canned-responses" id="modal-canned-responses">
+          <div class="loading">Loading...</div>
+        </div>
+
+        <h3 style="margin-bottom: 0.75rem;">Your Response</h3>
+        <textarea id="modal-response-text" placeholder="Type your response here..."></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="markInReview()">📝 Mark In Review</button>
+        <button class="btn btn-success" onclick="submitResponse()">✉️ Send Response</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Configuration
+    const API_BASE_URL = 'YOUR_N8N_URL'; // Replace with your n8n webhook URL
+    const API_TOKEN = 'YOUR_ADMIN_TOKEN'; // Replace with your admin token
+    let currentReviewId = null;
+    let currentUserId = null;
+
+    // API Helper
+    async function apiCall(endpoint, options = {}) {
+      try {
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+          ...options,
+          headers: {
+            'Authorization': `Bearer ${API_TOKEN}`,
+            'Content-Type': 'application/json',
+            ...options.headers
+          }
+        });
+        if (!response.ok) throw new Error(`API error: ${response.status}`);
+        return await response.json();
+      } catch (error) {
+        console.error('API Error:', error);
+        alert('Failed to connect to API. Check console for details.');
+        return null;
+      }
+    }
+
+    // View Management
+    function showView(viewName) {
+      // Hide all views
+      document.getElementById('queue-view').style.display = 'none';
+      document.getElementById('analytics-view').style.display = 'none';
+      document.getElementById('canned-view').style.display = 'none';
+      document.getElementById('settings-view').style.display = 'none';
+
+      // Remove active class from all nav items
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+      });
+
+      // Show selected view
+      document.getElementById(`${viewName}-view`).style.display = 'block';
+      event.target.classList.add('active');
+
+      // Load data for view
+      if (viewName === 'queue') loadQueue();
+      if (viewName === 'analytics') loadAnalytics();
+      if (viewName === 'canned') loadCannedResponses();
+    }
+
+    // Load Review Queue
+    async function loadQueue() {
+      const status = document.getElementById('filter-status').value;
+      const priority = document.getElementById('filter-priority').value;
+      const category = document.getElementById('filter-category').value;
+
+      const params = new URLSearchParams();
+      if (status) params.append('status', status);
+      if (priority) params.append('priority', priority);
+      if (category) params.append('category', category);
+
+      const tbody = document.getElementById('queue-tbody');
+      tbody.innerHTML = '<tr><td colspan="7"><div class="loading">Loading...</div></td></tr>';
+
+      const data = await apiCall(`/api/review/queue?${params.toString()}`);
+      
+      if (data && data.length > 0) {
+        let html = '';
+        data.forEach(item => {
+          const priorityClass = `priority-${item.priority}`;
+          const priorityBadge = `badge-${item.priority}`;
+          const waitingTime = item.hours_waiting ? Math.round(item.hours_waiting) : 0;
+          
+          html += `
+            <tr style="position: relative;">
+              <div class="priority-indicator ${priorityClass}"></div>
+              <td><span class="stat-badge ${priorityBadge}">${item.priority.toUpperCase()}</span></td>
+              <td>
+                <strong>${item.user_profile?.full_name || 'Anonymous'}</strong><br>
+                <small style="color: #64748b;">${item.user_id}</small><br>
+                <small style="color: #64748b;">${item.user_profile?.region || '-'}, ${item.user_profile?.district || '-'}</small>
+              </td>
+              <td>
+                <div style="max-width: 300px; overflow: hidden; text-overflow: ellipsis;">
+                  ${item.user_message.substring(0, 100)}${item.user_message.length > 100 ? '...' : ''}
+                </div>
+              </td>
+              <td><span class="stat-badge badge-normal">${item.category || 'N/A'}</span></td>
+              <td>${waitingTime}h</td>
+              <td>${item.review_status}</td>
+              <td>
+                <button class="btn btn-primary" onclick="openReview('${item.id}', '${item.user_id}')">
+                  Review
+                </button>
+              </td>
+            </tr>
+          `;
+        });
+        tbody.innerHTML = html;
+      } else {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: #64748b;">No reviews found</td></tr>';
+      }
+
+      // Load stats
+      loadStats();
+    }
+
+    // Load Dashboard Stats
+    async function loadStats() {
+      const stats = await apiCall('/api/review/stats');
+      if (stats) {
+        // Update stats cards
+        const summary = stats.queue_summary || [];
+        const pending = summary.find(s => s.review_status === 'pending') || {};
+        const inReview = summary.find(s => s.review_status === 'in_review') || {};
+        const urgent = summary.find(s => s.priority === 'urgent') || {};
+
+        document.getElementById('stat-pending').textContent = pending.count || 0;
+        document.getElementById('stat-in-review').textContent = inReview.count || 0;
+        document.getElementById('stat-urgent').textContent = `${urgent.count || 0} Urgent`;
+        document.getElementById('stat-avg-time').textContent = pending.avg_response_time_hours || '-';
+
+        // Today's completed
+        const today = stats.daily_stats?.find(d => d.date === new Date().toISOString().split('T')[0]);
+        document.getElementById('stat-completed').textContent = today?.completed || 0;
+      }
+    }
+
+    // Open Review Modal
+    async function openReview(reviewId, userId) {
+      currentReviewId = reviewId;
+      currentUserId = userId;
+
+      const modal = document.getElementById('review-modal');
+      modal.style.display = 'block';
+
+      // Load review details
+      const data = await apiCall(`/api/review/${reviewId}`);
+      
+      if (data) {
+        // User Info
+        const profile = data.review.user_profile || {};
+        document.getElementById('modal-user-info').innerHTML = `
+          <h3>${profile.full_name || 'Anonymous'}</h3>
+          <p><strong>Age:</strong> ${profile.age || 'N/A'} | <strong>Region:</strong> ${profile.region || 'N/A'}, ${profile.district || 'N/A'}</p>
+          <p><strong>Channel:</strong> ${data.review.channel || 'N/A'} | <strong>Total Messages:</strong> ${profile.total_messages || 0}</p>
+          <p><strong>Priority:</strong> <span class="stat-badge badge-${data.review.priority}">${data.review.priority.toUpperCase()}</span></p>
+          <p><strong>Category:</strong> ${data.review.category || 'N/A'}</p>
+          <p><strong>Waiting:</strong> ${Math.round(data.review.hours_waiting || 0)} hours</p>
+        `;
+
+        // Messages
+        document.getElementById('modal-user-message').textContent = data.review.user_message;
+        document.getElementById('modal-ai-response').textContent = data.review.ai_suggested_response || 'No AI suggestion';
+
+        // Conversation History
+        const history = data.conversation_history || [];
+        let historyHtml = '';
+        history.reverse().forEach(msg => {
+          const className = msg.role === 'user' ? 'message-user' : 'message-assistant';
+          historyHtml += `
+            <div class="message ${className}">
+              <strong>${msg.role === 'user' ? 'User' : 'Assistant'}:</strong> ${msg.content}
+              <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">
+                ${new Date(msg.timestamp).toLocaleString()}
+              </div>
+            </div>
+          `;
+        });
+        document.getElementById('modal-conversation').innerHTML = historyHtml || '<p>No conversation history</p>';
+
+        // Load canned responses
+        loadCannedForModal(data.review.category);
+      }
+    }
+
+    // Load Canned Responses for Modal
+    async function loadCannedForModal(category) {
+      const container = document.getElementById('modal-canned-responses');
+      const canned = await apiCall(`/api/canned-responses?category=${category || ''}`);
+      
+      if (canned && canned.length > 0) {
+        let html = '';
+        canned.forEach(response => {
+          html += `
+            <div class="canned-response-item" onclick="useCannedResponse('${response.id}')">
+              <strong>${response.title}</strong>
+              <p style="font-size: 0.875rem; color: #64748b; margin-top: 0.25rem;">
+                ${response.response_text_sw.substring(0, 100)}...
+              </p>
+            </div>
+          `;
+        });
+        container.innerHTML = html;
+      } else {
+        container.innerHTML = '<p style="color: #64748b;">No canned responses available</p>';
+      }
+    }
+
+    // Use Canned Response
+    async function useCannedResponse(responseId) {
+      const canned = await apiCall(`/api/canned-responses`);
+      const response = canned.find(c => c.id === responseId);
+      if (response) {
+        document.getElementById('modal-response-text').value = response.response_text_sw;
+      }
+    }
+
+    // Mark as In Review
+    async function markInReview() {
+      if (!currentReviewId) return;
+
+      const result = await apiCall(`/api/review/${currentReviewId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          status: 'in_review',
+          admin_user: 'admin' // Replace with actual admin username
+        })
+      });
+
+      if (result) {
+        alert('Marked as In Review');
+        closeReviewModal();
+        loadQueue();
+      }
+    }
+
+    // Submit Response
+    async function submitResponse() {
+      if (!currentReviewId) return;
+
+      const responseText = document.getElementById('modal-response-text').value.trim();
+      if (!responseText) {
+        alert('Please enter a response');
+        return;
+      }
+
+      const confirmed = confirm('Send this response to the user?');
+      if (!confirmed) return;
+
+      const result = await apiCall(`/api/review/${currentReviewId}/respond`, {
+        method: 'POST',
+        body: JSON.stringify({
+          response: responseText,
+          admin_user: 'admin', // Replace with actual admin username
+          send_to_user: true
+        })
+      });
+
+      if (result) {
+        alert('Response sent successfully!');
+        closeReviewModal();
+        loadQueue();
+      }
+    }
+
+    // Close Modal
+    function closeReviewModal() {
+      document.getElementById('review-modal').style.display = 'none';
+      currentReviewId = null;
+      currentUserId = null;
+    }
+
+    // Load Analytics
+    async function loadAnalytics() {
+      const stats = await apiCall('/api/review/stats');
+      
+      if (stats) {
+        // Calculate totals
+        const dailyStats = stats.daily_stats || [];
+        const totalReviews = dailyStats.reduce((sum, day) => sum + (day.total_submitted || 0), 0);
+        const totalCompleted = dailyStats.reduce((sum, day) => sum + (day.completed || 0), 0);
+        const avgTime = dailyStats.reduce((sum, day) => sum + (day.avg_response_time_hours || 0), 0) / dailyStats.length;
+        const completionRate = totalReviews > 0 ? Math.round((totalCompleted / totalReviews) * 100) : 0;
+
+        document.getElementById('analytics-total').textContent = totalReviews;
+        document.getElementById('analytics-avg-time').textContent = avgTime.toFixed(1);
+        document.getElementById('analytics-completion').textContent = completionRate;
+
+        // Top category
+        const categoryStats = stats.category_stats || [];
+        if (categoryStats.length > 0) {
+          categoryStats.sort((a, b) => b.total_count - a.total_count);
+          document.getElementById('analytics-top-category').textContent = categoryStats[0].category || 'N/A';
+        }
+
+        // Category Chart (simple text version)
+        let chartHtml = '<table style="width: 100%;"><thead><tr><th>Category</th><th>Total</th><th>Pending</th><th>Completed</th><th>Avg Time (h)</th></tr></thead><tbody>';
+        categoryStats.forEach(cat => {
+          chartHtml += `
+            <tr>
+              <td><strong>${cat.category}</strong></td>
+              <td>${cat.total_count}</td>
+              <td>${cat.pending_count}</td>
+              <td>${cat.responded_count}</td>
+              <td>${cat.avg_response_time_hours?.toFixed(1) || '-'}</td>
+            </tr>
+          `;
+        });
+        chartHtml += '</tbody></table>';
+        document.getElementById('category-chart').innerHTML = chartHtml;
+
+        // Admin Performance
+        const adminPerf = stats.admin_performance || [];
+        let perfHtml = '';
+        adminPerf.forEach(admin => {
+          perfHtml += `
+            <tr>
+              <td><strong>${admin.admin_user}</strong></td>
+              <td>${admin.total_reviews}</td>
+              <td>${admin.completed_reviews}</td>
+              <td>${admin.avg_response_time_hours?.toFixed(1) || '-'} hours</td>
+              <td>${admin.last_review_date || '-'}</td>
+            </tr>
+          `;
+        });
+        document.getElementById('admin-performance-tbody').innerHTML = perfHtml || '<tr><td colspan="5" style="text-align: center; color: #64748b;">No data</td></tr>';
+      }
+    }
+
+    // Load Canned Responses
+    async function loadCannedResponses() {
+      const container = document.getElementById('canned-responses-list');
+      const canned = await apiCall('/api/canned-responses');
+      
+      if (canned && canned.length > 0) {
+        let html = '';
+        canned.forEach(response => {
+          html += `
+            <div style="background: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+              <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
+                <div>
+                  <h3>${response.title}</h3>
+                  <span class="stat-badge badge-normal">${response.category}</span>
+                  <span style="margin-left: 0.5rem; font-size: 0.875rem; color: #64748b;">Used ${response.usage_count} times</span>
+                </div>
+                <button class="btn btn-primary">Edit</button>
+              </div>
+              <div style="margin-bottom: 0.75rem;">
+                <strong>Swahili:</strong>
+                <p style="color: #475569; margin-top: 0.25rem;">${response.response_text_sw}</p>
+              </div>
+              <div>
+                <strong>English:</strong>
+                <p style="color: #475569; margin-top: 0.25rem;">${response.response_text_en}</p>
+              </div>
+            </div>
+          `;
+        });
+        container.innerHTML = html;
+      } else {
+        container.innerHTML = '<p style="color: #64748b;">No canned responses available</p>';
+      }
+    }
+
+    // Filter Table (client-side search)
+    function filterTable() {
+      const searchTerm = document.getElementById('filter-search').value.toLowerCase();
+      const rows = document.querySelectorAll('#queue-tbody tr');
+      
+      rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+      });
+    }
+
+    // Initialize Dashboard
+    document.addEventListener('DOMContentLoaded', () => {
+      loadQueue();
+      
+      // Auto-refresh every 30 seconds
+      setInterval(() => {
+        const currentView = document.querySelector('.nav-item.active')?.textContent.trim();
+        if (currentView?.includes('Review Queue')) {
+          loadQueue();
+        }
+      }, 30000);
+    });
+
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+      const modal = document.getElementById('review-modal');
+      if (event.target === modal) {
+        closeReviewModal();
+      }
+    }
+
+    // Browser notification permission
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  </script>
+</body>
+</html>
